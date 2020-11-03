@@ -1,2 +1,190 @@
 # innovasjonsprosjektet
 fullstendig kode til gruppe 28 sitt prosjekt
+
+
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(13, 12, 11, 10, 9, 8);
+
+unsigned long gamalTid = 0;
+unsigned long omdreiningsTid, noverandeTid, lcdtid, lystid, avstandstid, avstandsPaTid;
+
+// Avstand/fart
+boolean meter = true;
+float fart, avstand;
+float pi = atan(1)*4;
+float radius = 0.62;
+int omdreiningsTeljing = 0;
+const int magnetSensor = A0;
+
+//Lyssensor
+const int sensorPin = A1;
+const int ledPin = 7;
+unsigned long lysPa;
+unsigned long lysPaTid = 0;
+boolean lysPaBool;
+
+//Avstand
+const int trigPin = 5;
+const int echoPin = 6;
+long duration;
+int distanceCm, distanceInch;
+
+//Blinklys
+const int inputright = A5;
+const int inputleft = A4;
+const int yellowright = 3;
+const int yellowleft = 4;
+int blinkTid;
+bool hoegreBlink, venstreBlink;
+unsigned long hoegreBlinkStart, venstreBlinkStart;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  pinMode(sensorPin, INPUT);
+  pinMode(magnetSensor, INPUT);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(inputright, INPUT);
+  pinMode(inputleft, INPUT);
+  pinMode(yellowright, OUTPUT);
+  pinMode(yellowleft, OUTPUT);
+  digitalWrite(yellowright, LOW);
+  digitalWrite(yellowleft, LOW);
+  lcd.begin(16, 2);
+  lcdtid = millis();
+  lystid = millis();
+  avstandsPaTid = millis();
+  avstandstid = millis();
+  Serial.begin(9600);
+}
+
+void loop() {
+
+  //avstandssensor
+  if (millis() - avstandstid > 1000){
+    avstandstid = millis();
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+    duration = pulseIn(echoPin, HIGH);
+    distanceCm = duration*0.034/2;
+    if (distanceCm >= 1 and distanceCm < 200){
+      lcd.setCursor(0,0); // Sets the location at which subsequent text written to the LCD will be displayed
+      lcd.print("Nokon bak! "); // Prints string "Distance" on the LCD
+      lcd.print(distanceCm); // Prints the distance value from the sensor
+      lcd.print("cm");
+      lcd.print("    ");
+      avstandsPaTid = millis();
+    }
+  }
+
+  //magnetsensor
+  if (analogRead(magnetSensor) > 545){
+    while (analogRead(magnetSensor) > 535){Serial.println("Her" + String(analogRead(magnetSensor)));}
+    
+    omdreiningsTeljing++;
+
+    //reknar ut avstand
+    if (avstand < 1000 and meter){
+      avstand = omdreiningsTeljing * radius * 2 * pi;
+      if(avstand >= 1000){
+        meter = false;
+      }
+    }
+    else{
+      avstand = (omdreiningsTeljing * radius * 2 * pi)/1000;
+    }
+    
+    //reknar ut omdreiningstida
+    gamalTid = noverandeTid;
+    noverandeTid = millis();
+    omdreiningsTid = noverandeTid - gamalTid;
+
+    //reknar ut farta
+    fart = ((radius * 2 * pi) / omdreiningsTid) * 3600;
+  }
+
+  // idlesjekk
+  if(millis() - noverandeTid > 3500){
+    fart = 0;
+  }
+
+  //lcd update
+  if (millis() - lcdtid > 500){
+    lcdtid = millis();
+    lcd.setCursor(0,0);
+    if(millis() - avstandsPaTid < 2000){}
+    else if(meter){
+      lcd.print("Avstand: " + String(avstand) + "m     ");
+    }
+    else{
+      lcd.print("Avstand: " + String(avstand) + "km     ");
+    }
+    if(millis() - lysPaTid < 3000){}
+    else{
+      lcd.setCursor(6,1);
+      lcd.print("      ");
+      lcd.setCursor(0,1);
+      lcd.print("Fart: " + String(fart));
+      lcd.setCursor(12,1);
+      lcd.print("km/h");
+    }
+  }
+
+  //Lys på/av
+  if(analogRead(sensorPin) < 80 and millis() - lystid > 100){
+    lystid = millis();
+    digitalWrite(ledPin, HIGH);
+    lysPa = millis();
+      if(not lysPaBool){
+        lcd.setCursor(0,1);
+        lcd.print("Lysa er paa     ");
+        lysPaTid = millis();
+      }
+    lysPaBool = true;
+  }
+  if(millis() - lysPa > 5000){
+    digitalWrite(ledPin, LOW);
+    lysPaBool = false;
+  }
+
+  //Blinklys
+  if (analogRead(inputright)>800){
+    hoegreBlink = true;
+    hoegreBlinkStart = millis();
+  }
+  else if (analogRead(inputleft)>800){
+    venstreBlink = true;
+    venstreBlinkStart = millis();
+  }
+
+  //venstre blink
+  if(venstreBlink){
+    blinkTid = millis() - venstreBlinkStart;
+    if((0 <= blinkTid && blinkTid < 500)||(1000 <= blinkTid && blinkTid < 1500)||(2000 <= blinkTid && blinkTid < 2500)||(3000 <= blinkTid && blinkTid < 3500)||(4000 <= blinkTid && blinkTid < 4500)){
+      digitalWrite(yellowleft, HIGH);
+    }
+    else{
+      digitalWrite(yellowleft, LOW);
+    }
+    if (blinkTid > 5000){
+      venstreBlink = false;
+    }
+  }
+
+  //Høgre blink
+  if(hoegreBlink){
+    blinkTid = millis() - hoegreBlinkStart;
+    if((0 <= blinkTid && blinkTid < 500)||(1000 <= blinkTid && blinkTid < 1500)||(2000 <= blinkTid && blinkTid < 2500)||(3000 <= blinkTid && blinkTid < 3500)||(4000 <= blinkTid && blinkTid < 4500)){
+      digitalWrite(yellowright, HIGH);
+    }
+    else{
+      digitalWrite(yellowright, LOW);
+    }
+    if (blinkTid > 5000){
+      hoegreBlink = false;
+    }
+  }
+}
