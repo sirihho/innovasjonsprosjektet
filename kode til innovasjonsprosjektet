@@ -6,7 +6,7 @@
 LiquidCrystal lcd(13, 12, 11, 10, 9, 8);
 
 unsigned long gamalTid = 0;
-unsigned long omdreiningsTid, noverandeTid, lcdtid, lystid, avstandstid, avstandsPaTid;
+unsigned long omdreiningsTid, noverandeTid, lcdtid, avstandstid, avstandsPaTid;
 
 // Avstand/fart
 boolean meter = true;
@@ -134,16 +134,15 @@ void loop() {
   }
 
   //Lys på/av
-  if(analogRead(sensorPin) < 80 and millis() - lystid > 100){
-    lystid = millis();
-    digitalWrite(ledPin, HIGH);
+  if(analogRead(sensorPin) < 80 and millis() - lysPa > 100){
     lysPa = millis();
-      if(not lysPaBool){
-        lcd.setCursor(0,1);
-        lcd.print("Lysa er paa     ");
-        lysPaTid = millis();
-      }
-    lysPaBool = true;
+    if(not lysPaBool){
+      lcd.setCursor(0,1);
+      lcd.print("Lysa er paa     ");
+      digitalWrite(ledPin, HIGH);
+      lysPaTid = millis();
+      lysPaBool = true;
+    }
   }
   if(millis() - lysPa > 5000){
     digitalWrite(ledPin, LOW);
