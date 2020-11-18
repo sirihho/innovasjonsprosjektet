@@ -12,7 +12,7 @@ unsigned long omdreiningsTid, noverandeTid, lcdtid, avstandstid, avstandsPaTid;
 boolean meter = true;
 float fart, avstand;
 float pi = atan(1)*4;
-float radius = 0.62;
+float radius = 0.38;
 int omdreiningsTeljing = 0;
 const int magnetSensor = A0;
 
